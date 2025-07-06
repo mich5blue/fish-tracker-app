@@ -1,8 +1,14 @@
 [build]
   # No build command needed for static HTML
-  command = ""
+  command = "echo 'Static HTML site - no build required'"
   # Publish the root directory where index.html is located
   publish = "."
+  # Override any package.json detection
+  ignore = "false"
+
+[build.processing]
+  # Skip processing
+  skip_processing = false
 
 [build.environment]
   # Disable npm/node processing

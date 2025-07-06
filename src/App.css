@@ -1,0 +1,96 @@
+/* Additional styles for the fish tracker app */
+
+.error-message {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 5px;
+  display: block;
+}
+
+.form-group input.error,
+.form-group select.error {
+  border-color: #dc3545;
+}
+
+.fish-type {
+  font-weight: 600;
+  color: #4a90e2;
+}
+
+.table-summary {
+  padding: 15px;
+  background: #f8f9fa;
+  border-top: 1px solid #eee;
+  text-align: center;
+  color: #666;
+}
+
+.table-summary p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .fish-table table {
+    font-size: 14px;
+  }
+  
+  .fish-table th,
+  .fish-table td {
+    padding: 8px;
+  }
+  
+  .header h1 {
+    font-size: 2em;
+  }
+  
+  .header p {
+    font-size: 1em;
+  }
+}
+
+/* Animation for modal */
+.modal-overlay {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Hover effects for table rows */
+.fish-table tbody tr:hover {
+  transform: translateX(2px);
+  transition: transform 0.2s ease;
+}
+
+/* Success state for form submission */
+.form-success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}

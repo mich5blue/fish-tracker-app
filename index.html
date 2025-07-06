@@ -412,6 +412,25 @@
             vertical-align: middle;
         }
 
+        /* Clickable row styles */
+        .fish-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .fish-table tbody tr[style*="pointer"] {
+            background: linear-gradient(to right, rgba(74, 144, 226, 0.02), rgba(74, 144, 226, 0.02));
+        }
+
+        .fish-table tbody tr[style*="pointer"]:hover {
+            background: linear-gradient(to right, rgba(74, 144, 226, 0.08), rgba(74, 144, 226, 0.08));
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.15);
+        }
+
+        .fish-table tbody tr[title]:hover td {
+            color: #4a90e2;
+        }
+
         /* Charts Section */
         .charts-section {
             margin-bottom: 30px;
@@ -1479,6 +1498,28 @@
                         </button>
                     </td>
                 `;
+
+                // Add click event listener to row for photo viewing
+                row.style.cursor = fish.image ? 'pointer' : 'default';
+                row.addEventListener('click', function(event) {
+                    // Don't trigger if clicking on buttons or action cells
+                    if (event.target.closest('.actions-cell') || 
+                        event.target.closest('button') || 
+                        event.target.closest('.fish-thumbnail')) {
+                        return;
+                    }
+                    
+                    // Only open modal if fish has an image
+                    if (fish.image) {
+                        showImageModal(fish.id);
+                    }
+                });
+
+                // Add hover effect for rows with photos
+                if (fish.image) {
+                    row.setAttribute('title', 'Click to view photo');
+                }
+
                 tableBody.appendChild(row);
             });
 

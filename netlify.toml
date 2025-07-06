@@ -1,6 +1,8 @@
-[build] 
-    command = "yarn build"
-    build = "build"
+[build]
+  # No build command needed for static HTML
+  command = ""
+  # Publish the root directory where index.html is located
+  publish = "."
 
 [build.environment]
   # Disable npm/node processing

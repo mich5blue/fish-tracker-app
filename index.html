@@ -757,6 +757,83 @@
             font-size: 1.1em;
         }
 
+        /* Point Legend Styles */
+        .point-legend {
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .legend-toggle {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .legend-toggle:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .legend-content {
+            display: none;
+            margin-top: 10px;
+            padding: 10px 0;
+        }
+
+        .legend-content.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.15);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .fish-name {
+            font-weight: 500;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .points {
+            font-weight: bold;
+            color: #ffd700;
+            font-size: 12px;
+        }
+
+        .legend-bonus {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255,255,255,0.8);
+            padding: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+        }
+
         .hidden {
             display: none;
         }
@@ -873,6 +950,30 @@
                 font-size: 13px;
             }
 
+            /* Point Legend responsive */
+            .legend-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 6px;
+            }
+
+            .legend-item {
+                padding: 5px 8px;
+                font-size: 12px;
+            }
+
+            .fish-name {
+                font-size: 11px;
+            }
+
+            .points {
+                font-size: 11px;
+            }
+
+            .legend-bonus {
+                font-size: 11px;
+                padding: 6px;
+            }
+
             .bar-container {
                 height: 120px;
                 overflow-x: auto;
@@ -954,6 +1055,28 @@
 
         <div class="charts-section">
             <h3>🏆 Fishing Leaderboards & Stats</h3>
+            
+            <!-- Point Legend -->
+            <div class="point-legend">
+                <button class="legend-toggle" onclick="togglePointLegend()">
+                    📊 Point Values <span id="legendArrow">▼</span>
+                </button>
+                <div class="legend-content" id="legendContent">
+                    <div class="legend-grid">
+                        <div class="legend-item"><span class="fish-name">Walleye</span><span class="points">10 pts</span></div>
+                        <div class="legend-item"><span class="fish-name">Smallmouth Bass</span><span class="points">9 pts</span></div>
+                        <div class="legend-item"><span class="fish-name">Mean Mouth</span><span class="points">8 pts</span></div>
+                        <div class="legend-item"><span class="fish-name">Largemouth Bass</span><span class="points">7 pts</span></div>
+                        <div class="legend-item"><span class="fish-name">Pike</span><span class="points">6 pts</span></div>
+                        <div class="legend-item"><span class="fish-name">Perch</span><span class="points">5 pts</span></div>
+                        <div class="legend-item"><span class="fish-name">Rock Bass</span><span class="points">4 pts</span></div>
+                        <div class="legend-item"><span class="fish-name">Bluegill</span><span class="points">3 pts</span></div>
+                    </div>
+                    <div class="legend-bonus">
+                        <strong>Size Bonus:</strong> +1 point for each inch over 10"
+                    </div>
+                </div>
+            </div>
             
             <div class="tab-container">
                 <div class="tab-buttons">
@@ -1735,6 +1858,20 @@
             // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(tabName + 'Content').classList.add('active');
+        }
+
+        // Point Legend Toggle
+        function togglePointLegend() {
+            const content = document.getElementById('legendContent');
+            const arrow = document.getElementById('legendArrow');
+            
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                arrow.textContent = '▼';
+            } else {
+                content.classList.add('show');
+                arrow.textContent = '▲';
+            }
         }
 
         // Helper function to check if a fish was caught today

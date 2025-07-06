@@ -1264,6 +1264,13 @@
                         </div>
                     </div>
                     
+                    <div class="chart-card">
+                        <h4>📊 Top 5 Points Today</h4>
+                        <div id="dailyPointBarChart" class="bar-chart">
+                            <div class="no-data">No fish caught today!</div>
+                        </div>
+                    </div>
+                    
                     <div class="chart-card chart-wide">
                         <h4>🕒 Last Fish Caught</h4>
                         <div id="lastFishChart" class="leader-display">
@@ -1293,6 +1300,13 @@
                     <div class="chart-card">
                         <h4>🏆 Overall Point Leader</h4>
                         <div id="overallPointLeaderChart" class="leader-display">
+                            <div class="no-data">No data yet - start catching fish!</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card">
+                        <h4>📊 Top 5 Points Overall</h4>
+                        <div id="overallPointBarChart" class="bar-chart">
                             <div class="no-data">No data yet - start catching fish!</div>
                         </div>
                     </div>
@@ -2072,6 +2086,7 @@
             updateDailyMostFishChart();
             updateDailyBiggestFishChart();
             updateDailyPointLeaderChart();
+            updateDailyPointBarChart();
             updateLastFishChart();
         }
 
@@ -2079,6 +2094,7 @@
             updateOverallMostFishChart();
             updateOverallBiggestFishChart();
             updateOverallPointLeaderChart();
+            updateOverallPointBarChart();
             updateFishCountChart();
         }
 
@@ -2386,6 +2402,120 @@
                         ${sortedFishermen.length > 2 ? `<br>3rd: ${sortedFishermen[2][0]} (${sortedFishermen[2][1]} pts)` : ''}
                     </div>
                 ` : ''}
+            `;
+        }
+
+        function updateDailyPointBarChart() {
+            const fishermanPoints = {};
+            
+            // Calculate points per fisherman for today only
+            fishData.forEach(fish => {
+                if (fish.fisherman && isCaughtToday(fish.timestamp)) {
+                    if (!fishermanPoints[fish.fisherman]) {
+                        fishermanPoints[fish.fisherman] = 0;
+                    }
+                    fishermanPoints[fish.fisherman] += calculateFishPoints(fish);
+                }
+            });
+
+            const container = document.getElementById('dailyPointBarChart');
+            
+            if (Object.keys(fishermanPoints).length === 0) {
+                container.innerHTML = '<div class="no-data">No fish caught today!</div>';
+                return;
+            }
+
+            // Sort by points (highest first) and take top 5
+            const sortedFishermen = Object.entries(fishermanPoints)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5);
+
+            const maxPoints = sortedFishermen[0][1];
+
+            const barsHTML = sortedFishermen.map(([fisherman, points], index) => {
+                const height = Math.max(20, (points / maxPoints) * 120);
+                let barColor = 'linear-gradient(to top, #4facfe 0%, #00f2fe 100%)';
+                
+                // Special colors for top 3
+                if (index === 0) {
+                    barColor = 'linear-gradient(to top, #ffd700 0%, #ffed4e 100%)'; // Gold
+                } else if (index === 1) {
+                    barColor = 'linear-gradient(to top, #c0c0c0 0%, #e8e8e8 100%)'; // Silver
+                } else if (index === 2) {
+                    barColor = 'linear-gradient(to top, #cd7f32 0%, #daa520 100%)'; // Bronze
+                }
+                
+                return `
+                    <div class="bar-item">
+                        <div class="bar" style="height: ${height}px; background: ${barColor};">
+                            <div class="bar-count">${points}</div>
+                        </div>
+                        <div class="bar-label">${fisherman}</div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="bar-container">
+                    ${barsHTML}
+                </div>
+            `;
+        }
+
+        function updateOverallPointBarChart() {
+            const fishermanPoints = {};
+            
+            // Calculate total points per fisherman
+            fishData.forEach(fish => {
+                if (fish.fisherman) {
+                    if (!fishermanPoints[fish.fisherman]) {
+                        fishermanPoints[fish.fisherman] = 0;
+                    }
+                    fishermanPoints[fish.fisherman] += calculateFishPoints(fish);
+                }
+            });
+
+            const container = document.getElementById('overallPointBarChart');
+            
+            if (Object.keys(fishermanPoints).length === 0) {
+                container.innerHTML = '<div class="no-data">No data yet - start catching fish!</div>';
+                return;
+            }
+
+            // Sort by points (highest first) and take top 5
+            const sortedFishermen = Object.entries(fishermanPoints)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5);
+
+            const maxPoints = sortedFishermen[0][1];
+
+            const barsHTML = sortedFishermen.map(([fisherman, points], index) => {
+                const height = Math.max(20, (points / maxPoints) * 120);
+                let barColor = 'linear-gradient(to top, #4facfe 0%, #00f2fe 100%)';
+                
+                // Special colors for top 3
+                if (index === 0) {
+                    barColor = 'linear-gradient(to top, #ffd700 0%, #ffed4e 100%)'; // Gold
+                } else if (index === 1) {
+                    barColor = 'linear-gradient(to top, #c0c0c0 0%, #e8e8e8 100%)'; // Silver
+                } else if (index === 2) {
+                    barColor = 'linear-gradient(to top, #cd7f32 0%, #daa520 100%)'; // Bronze
+                }
+                
+                return `
+                    <div class="bar-item">
+                        <div class="bar" style="height: ${height}px; background: ${barColor};">
+                            <div class="bar-count">${points}</div>
+                        </div>
+                        <div class="bar-label">${fisherman}</div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="bar-container">
+                    ${barsHTML}
+                </div>
             `;
         }
 

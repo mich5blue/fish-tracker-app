@@ -17,6 +17,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
     
     <style>
         * {
@@ -1692,6 +1693,13 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        
+        // Device and subscription management
+        let deviceId = localStorage.getItem('fishTrackerDeviceId');
+        if (!deviceId) {
+            deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('fishTrackerDeviceId', deviceId);
+        }
 
         let fishData = [];
         let currentSort = { key: 'size', direction: 'desc' };
@@ -1903,8 +1911,8 @@
 
             fishData.push(fishEntry);
             
-            // Send notification for new fish
-            sendFishNotification(fishEntry);
+            // Broadcast notification to all subscribers
+            broadcastFishNotification(fishEntry);
             
             saveFishData();
             displayFish();
@@ -2156,6 +2164,11 @@
         function initNotifications() {
             updateNotificationUI();
             
+            // Start notification listener if notifications are enabled
+            if (localStorage.getItem('fishNotificationsEnabled') === 'true') {
+                startNotificationListener();
+            }
+            
             // Show iOS PWA installation prompt if needed
             if (isIOS() && !isPWA()) {
                 showIOSInstallPrompt();
@@ -2254,20 +2267,56 @@
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
                         localStorage.setItem('fishNotificationsEnabled', 'true');
+                        await subscribeToNotifications();
+                        startNotificationListener();
                         showWelcomeNotification();
                     } else {
                         localStorage.setItem('fishNotificationsEnabled', 'false');
+                        await unsubscribeFromNotifications();
+                        stopNotificationListener();
                     }
                 } catch (error) {
                     console.error('Error requesting notification permission:', error);
                     localStorage.setItem('fishNotificationsEnabled', 'false');
+                    await unsubscribeFromNotifications();
+                    stopNotificationListener();
                 }
             } else {
                 // Toggle off
                 localStorage.setItem('fishNotificationsEnabled', 'false');
+                await unsubscribeFromNotifications();
+                stopNotificationListener();
             }
             
             updateNotificationUI();
+        }
+
+        // Subscribe device to notifications
+        async function subscribeToNotifications() {
+            try {
+                const deviceInfo = {
+                    deviceId: deviceId,
+                    subscribed: true,
+                    subscribedAt: new Date(),
+                    userAgent: navigator.userAgent,
+                    lastSeen: new Date()
+                };
+
+                await db.collection('notificationSubscriptions').doc(deviceId).set(deviceInfo);
+                console.log('Device subscribed to notifications');
+            } catch (error) {
+                console.error('Error subscribing to notifications:', error);
+            }
+        }
+
+        // Unsubscribe device from notifications
+        async function unsubscribeFromNotifications() {
+            try {
+                await db.collection('notificationSubscriptions').doc(deviceId).delete();
+                console.log('Device unsubscribed from notifications');
+            } catch (error) {
+                console.error('Error unsubscribing from notifications:', error);
+            }
         }
 
         function showWelcomeNotification() {
@@ -2288,21 +2337,61 @@
                    (!isIOS() || isPWA()); // iOS requires PWA for notifications
         }
 
-        function sendFishNotification(fish) {
+        // Real-time notification listener
+        let notificationListener = null;
+
+        function startNotificationListener() {
             if (!canSendNotification()) {
                 return;
             }
 
-            const points = calculateFishPoints(fish);
-            const title = `🎉 ${fish.fisherman} caught a fish!`;
-            const body = `${fish.size}" ${fish.fishType} worth ${points} points at ${fish.location || 'unknown location'}`;
+            try {
+                // Listen for new notification events
+                notificationListener = db.collection('notificationEvents')
+                    .orderBy('timestamp', 'desc')
+                    .limit(1)
+                    .onSnapshot((snapshot) => {
+                        snapshot.docChanges().forEach((change) => {
+                            if (change.type === 'added') {
+                                const notificationData = change.doc.data();
+                                
+                                // Don't notify if this device created the fish entry
+                                if (notificationData.sourceDeviceId !== deviceId) {
+                                    showRemoteFishNotification(notificationData);
+                                }
+                            }
+                        });
+                    });
+
+                console.log('Notification listener started');
+            } catch (error) {
+                console.error('Error starting notification listener:', error);
+            }
+        }
+
+        function stopNotificationListener() {
+            if (notificationListener) {
+                notificationListener();
+                notificationListener = null;
+                console.log('Notification listener stopped');
+            }
+        }
+
+        function showRemoteFishNotification(notificationData) {
+            if (!canSendNotification()) {
+                return;
+            }
+
+            const points = notificationData.points;
+            const title = `🎉 ${notificationData.fisherman} caught a fish!`;
+            const body = `${notificationData.size}" ${notificationData.fishType} worth ${points} points at ${notificationData.location || 'unknown location'}`;
 
             try {
                 const notification = new Notification(title, {
                     body: body,
-                    icon: fish.image || '🎣',
+                    icon: notificationData.icon || '🎣',
                     badge: '🎣',
-                    tag: `fish-${fish.id}`,
+                    tag: `fish-${notificationData.fishId}`,
                     requireInteraction: false,
                     silent: false
                 });
@@ -2312,16 +2401,39 @@
                     notification.close();
                 }, 5000);
 
-                // Optional: Handle notification click
+                // Handle notification click
                 notification.onclick = function() {
                     window.focus();
-                    if (fish.image) {
-                        showImageModal(fish.id);
+                    if (notificationData.fishId) {
+                        showImageModal(notificationData.fishId);
                     }
                     notification.close();
                 };
             } catch (error) {
-                console.error('Error sending notification:', error);
+                console.error('Error showing remote notification:', error);
+            }
+        }
+
+        // Create notification event for all subscribers
+        async function broadcastFishNotification(fish) {
+            try {
+                const points = calculateFishPoints(fish);
+                const notificationEvent = {
+                    fishId: fish.id,
+                    fisherman: fish.fisherman,
+                    fishType: fish.fishType,
+                    size: fish.size,
+                    location: fish.location,
+                    points: points,
+                    timestamp: new Date(),
+                    sourceDeviceId: deviceId,
+                    icon: fish.image || '🎣'
+                };
+
+                await db.collection('notificationEvents').add(notificationEvent);
+                console.log('Fish notification broadcast to all subscribers');
+            } catch (error) {
+                console.error('Error broadcasting fish notification:', error);
             }
         }
 

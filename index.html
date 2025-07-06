@@ -979,6 +979,13 @@
                         </div>
                     </div>
                     
+                    <div class="chart-card">
+                        <h4>🏆 Point Leader Today</h4>
+                        <div id="dailyPointLeaderChart" class="leader-display">
+                            <div class="no-data">No fish caught today!</div>
+                        </div>
+                    </div>
+                    
                     <div class="chart-card chart-wide">
                         <h4>🕒 Last Fish Caught</h4>
                         <div id="lastFishChart" class="leader-display">
@@ -1001,6 +1008,13 @@
                     <div class="chart-card">
                         <h4>🐟 Biggest Fish Overall</h4>
                         <div id="overallBiggestFishChart" class="leader-display">
+                            <div class="no-data">No data yet - start catching fish!</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card">
+                        <h4>🏆 Overall Point Leader</h4>
+                        <div id="overallPointLeaderChart" class="leader-display">
                             <div class="no-data">No data yet - start catching fish!</div>
                         </div>
                     </div>
@@ -1730,6 +1744,30 @@
             return today.toDateString() === fishDate.toDateString();
         }
 
+        // Point System
+        function calculateFishPoints(fish) {
+            // Base points by fish type
+            const pointValues = {
+                'Walleye': 10,
+                'Smallmouth Bass': 9,
+                'Mean Mouth': 8,
+                'Largemouth Bass': 7,
+                'Pike': 6,
+                'Perch': 5,
+                'Rock Bass': 4,
+                'Bluegill': 3
+            };
+
+            let points = pointValues[fish.fishType] || 0;
+            
+            // Add 1 point for each inch over 10"
+            if (fish.size > 10) {
+                points += Math.floor(fish.size - 10);
+            }
+
+            return points;
+        }
+
         // Charts and Visualizations
         function updateCharts() {
             updateDailyCharts();
@@ -1739,12 +1777,14 @@
         function updateDailyCharts() {
             updateDailyMostFishChart();
             updateDailyBiggestFishChart();
+            updateDailyPointLeaderChart();
             updateLastFishChart();
         }
 
         function updateOverallCharts() {
             updateOverallMostFishChart();
             updateOverallBiggestFishChart();
+            updateOverallPointLeaderChart();
             updateFishCountChart();
         }
 
@@ -1811,6 +1851,45 @@
                         ${formatDate(biggestFish.timestamp).split(' ')[1]}
                     </div>
                 </div>
+            `;
+        }
+
+        function updateDailyPointLeaderChart() {
+            const fishermanPoints = {};
+            
+            // Calculate points per fisherman for today only
+            fishData.forEach(fish => {
+                if (fish.fisherman && isCaughtToday(fish.timestamp)) {
+                    if (!fishermanPoints[fish.fisherman]) {
+                        fishermanPoints[fish.fisherman] = 0;
+                    }
+                    fishermanPoints[fish.fisherman] += calculateFishPoints(fish);
+                }
+            });
+
+            const sortedFishermen = Object.entries(fishermanPoints)
+                .sort(([,a], [,b]) => b - a);
+
+            const container = document.getElementById('dailyPointLeaderChart');
+            
+            if (sortedFishermen.length === 0) {
+                container.innerHTML = '<div class="no-data">No fish caught today!</div>';
+                return;
+            }
+
+            const winner = sortedFishermen[0];
+            container.innerHTML = `
+                <div class="leader-card first-place">
+                    <div class="leader-medal">🏆</div>
+                    <div class="leader-name">${winner[0]}</div>
+                    <div class="leader-stat">${winner[1]} points today</div>
+                </div>
+                ${sortedFishermen.length > 1 ? `
+                    <div style="font-size: 0.9em; margin-top: 10px; color: rgba(255,255,255,0.8);">
+                        2nd: ${sortedFishermen[1][0]} (${sortedFishermen[1][1]} pts)
+                        ${sortedFishermen.length > 2 ? `<br>3rd: ${sortedFishermen[2][0]} (${sortedFishermen[2][1]} pts)` : ''}
+                    </div>
+                ` : ''}
             `;
         }
 
@@ -1932,6 +2011,45 @@
                     <div style="font-size: 0.9em; margin-top: 10px; color: rgba(255,255,255,0.8);">
                         2nd: ${sortedByBest[1].fisherman} (${sortedByBest[1].size}")
                         ${sortedByBest.length > 2 ? `<br>3rd: ${sortedByBest[2].fisherman} (${sortedByBest[2].size}")` : ''}
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        function updateOverallPointLeaderChart() {
+            const fishermanPoints = {};
+            
+            // Calculate total points per fisherman
+            fishData.forEach(fish => {
+                if (fish.fisherman) {
+                    if (!fishermanPoints[fish.fisherman]) {
+                        fishermanPoints[fish.fisherman] = 0;
+                    }
+                    fishermanPoints[fish.fisherman] += calculateFishPoints(fish);
+                }
+            });
+
+            const sortedFishermen = Object.entries(fishermanPoints)
+                .sort(([,a], [,b]) => b - a);
+
+            const container = document.getElementById('overallPointLeaderChart');
+            
+            if (sortedFishermen.length === 0) {
+                container.innerHTML = '<div class="no-data">No data yet - start catching fish!</div>';
+                return;
+            }
+
+            const winner = sortedFishermen[0];
+            container.innerHTML = `
+                <div class="leader-card first-place">
+                    <div class="leader-medal">🏆</div>
+                    <div class="leader-name">${winner[0]}</div>
+                    <div class="leader-stat">${winner[1]} total points</div>
+                </div>
+                ${sortedFishermen.length > 1 ? `
+                    <div style="font-size: 0.9em; margin-top: 10px; color: rgba(255,255,255,0.8);">
+                        2nd: ${sortedFishermen[1][0]} (${sortedFishermen[1][1]} pts)
+                        ${sortedFishermen.length > 2 ? `<br>3rd: ${sortedFishermen[2][0]} (${sortedFishermen[2][1]} pts)` : ''}
                     </div>
                 ` : ''}
             `;
@@ -2223,11 +2341,13 @@
                 const modalDetails = document.getElementById('imageModalDetails');
                 const modalImg = document.getElementById('imageModalImg');
 
+                const points = calculateFishPoints(fish);
                 modalTitle.textContent = `${fish.fishType} Photo`;
                 modalDetails.innerHTML = `
                     <strong>${fish.fisherman}</strong> caught this <strong>${fish.size}"</strong> <strong>${fish.fishType}</strong><br>
                     at <strong>${fish.location}</strong> on <strong>${formatDate(fish.timestamp)}</strong><br>
-                    using <strong>${fish.lure}</strong>
+                    using <strong>${fish.lure}</strong><br>
+                    <strong style="color: #4a90e2;">Worth ${points} points!</strong>
                 `;
                 modalImg.src = fish.image;
                 modal.classList.remove('hidden');

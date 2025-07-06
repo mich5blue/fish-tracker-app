@@ -1063,14 +1063,14 @@
                 </button>
                 <div class="legend-content" id="legendContent">
                     <div class="legend-grid">
-                        <div class="legend-item"><span class="fish-name">Walleye</span><span class="points">10 pts</span></div>
-                        <div class="legend-item"><span class="fish-name">Smallmouth Bass</span><span class="points">9 pts</span></div>
+                        <div class="legend-item"><span class="fish-name">Walleye</span><span class="points">15 pts</span></div>
+                        <div class="legend-item"><span class="fish-name">Smallmouth Bass</span><span class="points">12 pts</span></div>
                         <div class="legend-item"><span class="fish-name">Mean Mouth</span><span class="points">8 pts</span></div>
                         <div class="legend-item"><span class="fish-name">Largemouth Bass</span><span class="points">7 pts</span></div>
                         <div class="legend-item"><span class="fish-name">Pike</span><span class="points">6 pts</span></div>
                         <div class="legend-item"><span class="fish-name">Perch</span><span class="points">5 pts</span></div>
-                        <div class="legend-item"><span class="fish-name">Rock Bass</span><span class="points">4 pts</span></div>
-                        <div class="legend-item"><span class="fish-name">Bluegill</span><span class="points">3 pts</span></div>
+                        <div class="legend-item"><span class="fish-name">Rock Bass</span><span class="points">1 pt</span></div>
+                        <div class="legend-item"><span class="fish-name">Bluegill</span><span class="points">1 pt</span></div>
                     </div>
                     <div class="legend-bonus">
                         <strong>Size Bonus:</strong> +1 point for each inch over 10"
@@ -1885,14 +1885,14 @@
         function calculateFishPoints(fish) {
             // Base points by fish type
             const pointValues = {
-                'Walleye': 10,
-                'Smallmouth Bass': 9,
+                'Walleye': 15,
+                'Smallmouth Bass': 12,
                 'Mean Mouth': 8,
                 'Largemouth Bass': 7,
                 'Pike': 6,
                 'Perch': 5,
-                'Rock Bass': 4,
-                'Bluegill': 3
+                'Rock Bass': 1,
+                'Bluegill': 1
             };
 
             let points = pointValues[fish.fishType] || 0;

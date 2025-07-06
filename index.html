@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Borek Fish Tracker</title>
     
+    <!-- PWA Meta Tags for iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Fish Tracker">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiI+PHJlY3Qgd2lkdGg9IjE5MiIgaGVpZ2h0PSIxOTIiIGZpbGw9IiM0YTkwZTIiIHJ4PSIyNCIvPjx0ZXh0IHg9Ijk2IiB5PSIxMjAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjgwIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+PoTwvdGV4dD48L3N2Zz4=">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiQm9yZWsgRmlzaCBUcmFja2VyIiwic2hvcnRfbmFtZSI6IkZpc2ggVHJhY2tlciIsInN0YXJ0X3VybCI6Ii4vIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzRhOTBlMiIsInRoZW1lX2NvbG9yIjoiIzRhOTBlMiIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNREF3TUM5emRtY2lJSGRwWkhSb1BTSXhPVElpSUdobGFXZG9kRDBpTVRreUlpQjJhV1YzUW05NFBTSXdJREFnTVRreUlERTVNaUkrUEhKbFkzUWdkMmxrZEdnOUlqRTVNaUlnYUdWcFoyaDBQU0l4T1RJaUlHWnBiR3c5SWNOZ09XVXlJaUJ5ZUQwaU1qUWlMejQ4ZEdWNGRDQjRQU0k1TmlJZ2VUMGlNVEl3SWlCbWIyNTBMV1poYldsc2VUMGljMkZ1Y3kxelpYSnBaaUlnWm05dWRDMXphWHBsUFNJNE1DSWdabWxzYkQwaWQyaHBkR1VpSUhSbGVIUXRZVzVqYUc5eVBTSnRhV1JrYkdVaVBqanluNkU4TDNSbGVIUStQQzl6ZG1jKyIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9zdmcreG1sIn1dfQ==">
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -2129,9 +2138,28 @@
             }
         }
 
+        // iOS and PWA Detection
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        }
+
+        function isPWA() {
+            return window.matchMedia('(display-mode: standalone)').matches || 
+                   window.navigator.standalone === true;
+        }
+
+        function isSafariIOS() {
+            return isIOS() && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
+        }
+
         // Notification System
         function initNotifications() {
             updateNotificationUI();
+            
+            // Show iOS PWA installation prompt if needed
+            if (isIOS() && !isPWA()) {
+                showIOSInstallPrompt();
+            }
         }
 
         function updateNotificationUI() {
@@ -2147,6 +2175,16 @@
 
             const permission = Notification.permission;
             const enabled = localStorage.getItem('fishNotificationsEnabled') === 'true';
+            const isiOS = isIOS();
+            const pwa = isPWA();
+
+            // iOS specific handling
+            if (isiOS && !pwa) {
+                toggle.className = 'notification-toggle';
+                icon.textContent = '📱';
+                text.textContent = 'Add to Home Screen';
+                return;
+            }
 
             if (permission === 'granted' && enabled) {
                 toggle.className = 'notification-toggle enabled';
@@ -2163,16 +2201,51 @@
             }
         }
 
+        function showIOSInstallPrompt() {
+            // Only show once per session
+            if (sessionStorage.getItem('iosPromptShown')) return;
+            
+            sessionStorage.setItem('iosPromptShown', 'true');
+            
+            setTimeout(() => {
+                if (confirm('🍎 iPhone users: To receive notifications, tap the Share button and select "Add to Home Screen". This will enable push notifications for the Fish Tracker app. Would you like to see instructions?')) {
+                    showIOSInstructions();
+                }
+            }, 3000);
+        }
+
+        function showIOSInstructions() {
+            alert('📱 iPhone Setup Instructions:\n\n' +
+                  '1. Tap the Share button (⬆️) at the bottom of Safari\n' +
+                  '2. Scroll down and tap "Add to Home Screen"\n' +
+                  '3. Tap "Add" to create the app icon\n' +
+                  '4. Open the app from your home screen\n' +
+                  '5. Tap "Enable Notifications" in the app\n\n' +
+                  'This allows the app to send you fish catch notifications!');
+        }
+
         async function toggleNotifications() {
             if (!('Notification' in window)) {
                 alert('Your browser does not support notifications.');
                 return;
             }
 
+            const isiOS = isIOS();
+            const pwa = isPWA();
+
+            // iOS specific handling
+            if (isiOS && !pwa) {
+                showIOSInstructions();
+                return;
+            }
+
             const currentEnabled = localStorage.getItem('fishNotificationsEnabled') === 'true';
             
             if (Notification.permission === 'denied') {
-                alert('Notifications are blocked. Please enable them in your browser settings.');
+                const message = isiOS ? 
+                    'Notifications are blocked. Go to Settings > Notifications > Fish Tracker to enable them.' :
+                    'Notifications are blocked. Please enable them in your browser settings.';
+                alert(message);
                 return;
             }
 
@@ -2211,7 +2284,8 @@
         function canSendNotification() {
             return 'Notification' in window &&
                    Notification.permission === 'granted' &&
-                   localStorage.getItem('fishNotificationsEnabled') === 'true';
+                   localStorage.getItem('fishNotificationsEnabled') === 'true' &&
+                   (!isIOS() || isPWA()); // iOS requires PWA for notifications
         }
 
         function sendFishNotification(fish) {

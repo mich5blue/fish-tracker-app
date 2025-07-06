@@ -1,10 +1,6 @@
-[build]
-  # No build command needed for static HTML
-  command = "ls -la && echo 'Static site - no build needed'"
-  # Publish the root directory where index.html is located
-  publish = "."
-  # Skip build if no changes
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF ."
+[build] 
+    command = "yarn build"
+    build = "build"
 
 [build.environment]
   # Disable npm/node processing

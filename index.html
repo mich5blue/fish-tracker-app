@@ -1117,15 +1117,17 @@
 
                 <div class="form-group">
                     <label for="lure">Lure Used *</label>
-                    <input type="text" id="lure" name="lure" placeholder="Enter lure used..." required>
+                    <input type="text" id="lure" name="lure" placeholder="Enter lure used..." required list="luresList" autocomplete="off">
+                    <datalist id="luresList"></datalist>
                     <span class="error-message" id="lureError"></span>
                 </div>
 
-                                    <div class="form-group">
-                        <label for="location">Location</label>
-                        <input type="text" id="location" name="location" placeholder="Enter fishing location...">
-                        <span class="error-message" id="locationError"></span>
-                    </div>
+                <div class="form-group">
+                    <label for="location">Location</label>
+                    <input type="text" id="location" name="location" placeholder="Enter fishing location..." list="locationsList" autocomplete="off">
+                    <datalist id="locationsList"></datalist>
+                    <span class="error-message" id="locationError"></span>
+                </div>
 
                 <div class="form-group">
                     <label for="fishImage">Fish Photo (Optional)</label>
@@ -1224,13 +1226,15 @@
 
                 <div class="form-group">
                     <label for="editLure">Lure Used *</label>
-                    <input type="text" id="editLure" name="lure" placeholder="Enter lure used..." required>
+                    <input type="text" id="editLure" name="lure" placeholder="Enter lure used..." required list="editLuresList" autocomplete="off">
+                    <datalist id="editLuresList"></datalist>
                     <span class="error-message" id="editLureError"></span>
                 </div>
 
                 <div class="form-group">
                     <label for="editLocation">Location</label>
-                    <input type="text" id="editLocation" name="location" placeholder="Enter fishing location...">
+                    <input type="text" id="editLocation" name="location" placeholder="Enter fishing location..." list="editLocationsList" autocomplete="off">
+                    <datalist id="editLocationsList"></datalist>
                     <span class="error-message" id="editLocationError"></span>
                 </div>
 
@@ -1328,6 +1332,7 @@
             displayFish();
             updateCharts();
             updateAdditionalStats();
+            updateAutocompleteOptions();
         }
 
         window.addEventListener('load', function() {
@@ -1369,11 +1374,62 @@
             }
         }
 
+        // Autocomplete functions
+        function updateAutocompleteOptions() {
+            updateLureAutocomplete();
+            updateLocationAutocomplete();
+        }
+
+        function updateLureAutocomplete() {
+            const uniqueLures = [...new Set(fishData.map(fish => fish.lure).filter(lure => lure && lure.trim()))];
+            
+            // Update add form datalist
+            const luresList = document.getElementById('luresList');
+            luresList.innerHTML = '';
+            uniqueLures.forEach(lure => {
+                const option = document.createElement('option');
+                option.value = lure;
+                luresList.appendChild(option);
+            });
+
+            // Update edit form datalist
+            const editLuresList = document.getElementById('editLuresList');
+            editLuresList.innerHTML = '';
+            uniqueLures.forEach(lure => {
+                const option = document.createElement('option');
+                option.value = lure;
+                editLuresList.appendChild(option);
+            });
+        }
+
+        function updateLocationAutocomplete() {
+            const uniqueLocations = [...new Set(fishData.map(fish => fish.location).filter(location => location && location.trim()))];
+            
+            // Update add form datalist
+            const locationsList = document.getElementById('locationsList');
+            locationsList.innerHTML = '';
+            uniqueLocations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = location;
+                locationsList.appendChild(option);
+            });
+
+            // Update edit form datalist
+            const editLocationsList = document.getElementById('editLocationsList');
+            editLocationsList.innerHTML = '';
+            uniqueLocations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = location;
+                editLocationsList.appendChild(option);
+            });
+        }
+
         function openModal() {
             document.getElementById('modalOverlay').classList.remove('hidden');
             document.getElementById('fishForm').reset();
             clearErrors();
             removeImage(); // Reset image state
+            updateAutocompleteOptions(); // Update autocomplete lists
         }
 
         function closeModal() {
@@ -1452,6 +1508,7 @@
             fishData.push(fishEntry);
             saveFishData();
             displayFish();
+            updateAutocompleteOptions();
             closeModal();
         }
 
@@ -2234,6 +2291,9 @@
                 // Initialize edit photo upload functionality
                 initEditPhotoUpload();
                 
+                // Update autocomplete options
+                updateAutocompleteOptions();
+                
                 modal.classList.remove('hidden');
             }
         }
@@ -2443,6 +2503,7 @@
                     
                     // Refresh display and charts
                     displayFish();
+                    updateAutocompleteOptions();
                     
                     // Close modal
                     closeEditFishModal();
@@ -2498,6 +2559,7 @@
                 
                 // Refresh the display
                 displayFish();
+                updateAutocompleteOptions();
                 
                 // Close the modal
                 closeConfirmModal();

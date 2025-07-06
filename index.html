@@ -834,6 +834,107 @@
             border-radius: 6px;
         }
 
+        /* News Feed Styles */
+        .news-feed {
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            color: white;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        .news-header {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .news-header h3 {
+            margin: 0;
+            font-size: 1.4em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .news-item {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .news-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        }
+
+        .news-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .news-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 3px solid rgba(255,255,255,0.3);
+            flex-shrink: 0;
+        }
+
+        .news-placeholder {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            flex-shrink: 0;
+            border: 3px solid rgba(255,255,255,0.3);
+        }
+
+        .news-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .news-fisherman {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+        .news-fish-info {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .news-meta {
+            font-size: 0.9em;
+            color: rgba(255,255,255,0.7);
+            line-height: 1.4;
+        }
+
+        .news-points {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9em;
+            display: inline-block;
+            margin-top: 5px;
+            box-shadow: 0 2px 8px rgba(255,215,0,0.3);
+        }
+
         .hidden {
             display: none;
         }
@@ -1032,6 +1133,50 @@
             .stat-details {
                 font-size: 0.75em;
             }
+
+            /* News Feed responsive */
+            .news-feed {
+                margin-bottom: 20px;
+                padding: 15px;
+            }
+
+            .news-header h3 {
+                font-size: 1.2em;
+            }
+
+            .news-item {
+                padding: 15px;
+            }
+
+            .news-content {
+                gap: 12px;
+            }
+
+            .news-photo, .news-placeholder {
+                width: 60px;
+                height: 60px;
+            }
+
+            .news-placeholder {
+                font-size: 1.5em;
+            }
+
+            .news-fisherman {
+                font-size: 1.1em;
+            }
+
+            .news-fish-info {
+                font-size: 1em;
+            }
+
+            .news-meta {
+                font-size: 0.8em;
+            }
+
+            .news-points {
+                font-size: 0.8em;
+                padding: 3px 6px;
+            }
         }
     </style>
 </head>
@@ -1047,6 +1192,16 @@
         <div id="loadingIndicator" class="loading-indicator">
             <div class="loading-spinner">🎣</div>
             <p>Loading fish data from the cloud...</p>
+        </div>
+
+        <!-- News Feed Section -->
+        <div class="news-feed" id="newsFeed" style="display: none;">
+            <div class="news-header">
+                <h3>🔥 Latest Catch</h3>
+            </div>
+            <div class="news-item" id="latestCatchNews">
+                <!-- Latest catch will be populated here -->
+            </div>
         </div>
 
         <button class="add-fish-btn" onclick="openModal()">
@@ -1467,6 +1622,7 @@
             loadingIndicator.style.display = 'none';
             
             displayFish();
+            updateNewsFeed();
             updateCharts();
             updateAdditionalStats();
             updateAutocompleteOptions();
@@ -1645,6 +1801,7 @@
             fishData.push(fishEntry);
             saveFishData();
             displayFish();
+            updateNewsFeed();
             updateAutocompleteOptions();
             closeModal();
         }
@@ -2071,6 +2228,46 @@
             const diffInDays = Math.floor(diffInHours / 24);
             if (diffInDays === 1) return 'Yesterday';
             return `${diffInDays} days ago`;
+        }
+
+        // News Feed Functions
+        function updateNewsFeed() {
+            const newsFeed = document.getElementById('newsFeed');
+            const newsContent = document.getElementById('latestCatchNews');
+            
+            if (fishData.length === 0) {
+                newsFeed.style.display = 'none';
+                return;
+            }
+            
+            // Find the most recently caught fish
+            const latestFish = fishData.reduce((latest, current) => {
+                return new Date(current.timestamp) > new Date(latest.timestamp) ? current : latest;
+            });
+            
+            const points = calculateFishPoints(latestFish);
+            const timeAgo = getTimeAgo(latestFish.timestamp);
+            
+            const photoElement = latestFish.image 
+                ? `<img src="${latestFish.image}" class="news-photo" alt="Latest catch">`
+                : `<div class="news-placeholder">🎣</div>`;
+            
+            newsContent.innerHTML = `
+                <div class="news-content" onclick="showImageModal(${latestFish.id})">
+                    ${photoElement}
+                    <div class="news-details">
+                        <div class="news-fisherman">🎉 ${latestFish.fisherman} just caught a fish!</div>
+                        <div class="news-fish-info">${latestFish.size}" ${latestFish.fishType}</div>
+                        <div class="news-meta">
+                            📍 ${latestFish.location || 'Unknown location'} • 🎣 ${latestFish.lure}<br>
+                            🕒 ${timeAgo}
+                        </div>
+                        <div class="news-points">🏆 ${points} points</div>
+                    </div>
+                </div>
+            `;
+            
+            newsFeed.style.display = 'block';
         }
 
         // Overall Charts
@@ -2760,6 +2957,7 @@
                     
                     // Refresh display and charts
                     displayFish();
+                    updateNewsFeed();
                     updateAutocompleteOptions();
                     
                     // Close modal
@@ -2816,6 +3014,7 @@
                 
                 // Refresh the display
                 displayFish();
+                updateNewsFeed();
                 updateAutocompleteOptions();
                 
                 // Close the modal

@@ -17,7 +17,6 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
     
     <style>
         * {
@@ -88,45 +87,6 @@
             box-shadow: 0 8px 25px rgba(79, 172, 254, 0.6);
             background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
         }
-
-        .notification-settings {
-            display: flex;
-            align-items: center;
-        }
-
-        .notification-toggle {
-            background: rgba(255,255,255,0.1);
-            color: #666;
-            border: 2px solid #ddd;
-            padding: 10px 20px;
-            font-size: 0.9em;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .notification-toggle:hover {
-            background: rgba(255,255,255,0.2);
-            border-color: #4facfe;
-        }
-
-        .notification-toggle.enabled {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            border-color: #28a745;
-            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-        }
-
-        .notification-toggle.disabled {
-            background: rgba(108, 117, 125, 0.1);
-            color: #6c757d;
-            border-color: #6c757d;
-        }
-
-
 
         .fish-table {
             background: white;
@@ -1250,12 +1210,7 @@
                 font-size: 1em;
             }
 
-            .notification-toggle {
-                padding: 8px 16px;
-                font-size: 0.85em;
-                min-width: 160px;
-                justify-content: center;
-            }
+
         }
     </style>
 </head>
@@ -1287,14 +1242,6 @@
             <button class="add-fish-btn" onclick="openModal()">
                 ➕ Add New Fish
             </button>
-            
-            <!-- Notification Settings -->
-            <div class="notification-settings">
-                <button class="notification-toggle" id="notificationToggle" onclick="toggleNotifications()">
-                    <span id="notificationIcon">🔔</span>
-                    <span id="notificationText">Enable Notifications</span>
-                </button>
-            </div>
         </div>
 
         <div class="charts-section">
@@ -1741,7 +1688,6 @@
         window.addEventListener('load', function() {
             loadFishData();
             initImageUpload();
-            initNotifications();
         });
 
         async function saveFishData() {
@@ -1905,15 +1851,11 @@
                 size: parseFloat(formData.get('size')),
                 lure: formData.get('lure'),
                 location: formData.get('location'),
-                image: currentImage, // Include image data
+                image: currentImage,
                 timestamp: new Date().toISOString()
             };
 
             fishData.push(fishEntry);
-            
-            // Broadcast notification to all subscribers
-            broadcastFishNotification(fishEntry);
-            
             saveFishData();
             displayFish();
             updateNewsFeed();
@@ -2146,296 +2088,9 @@
             }
         }
 
-        // iOS and PWA Detection
-        function isIOS() {
-            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        }
 
-        function isPWA() {
-            return window.matchMedia('(display-mode: standalone)').matches || 
-                   window.navigator.standalone === true;
-        }
 
-        function isSafariIOS() {
-            return isIOS() && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent);
-        }
 
-        // Notification System
-        function initNotifications() {
-            updateNotificationUI();
-            
-            // Start notification listener if notifications are enabled
-            if (localStorage.getItem('fishNotificationsEnabled') === 'true') {
-                startNotificationListener();
-            }
-            
-            // Show iOS PWA installation prompt if needed
-            if (isIOS() && !isPWA()) {
-                showIOSInstallPrompt();
-            }
-        }
-
-        function updateNotificationUI() {
-            const toggle = document.getElementById('notificationToggle');
-            const icon = document.getElementById('notificationIcon');
-            const text = document.getElementById('notificationText');
-            
-            if (!('Notification' in window)) {
-                // Browser doesn't support notifications
-                toggle.style.display = 'none';
-                return;
-            }
-
-            const permission = Notification.permission;
-            const enabled = localStorage.getItem('fishNotificationsEnabled') === 'true';
-            const isiOS = isIOS();
-            const pwa = isPWA();
-
-            // iOS specific handling
-            if (isiOS && !pwa) {
-                toggle.className = 'notification-toggle';
-                icon.textContent = '📱';
-                text.textContent = 'Add to Home Screen';
-                return;
-            }
-
-            if (permission === 'granted' && enabled) {
-                toggle.className = 'notification-toggle enabled';
-                icon.textContent = '🔔';
-                text.textContent = 'Notifications On';
-            } else if (permission === 'denied') {
-                toggle.className = 'notification-toggle disabled';
-                icon.textContent = '🔕';
-                text.textContent = 'Notifications Blocked';
-            } else {
-                toggle.className = 'notification-toggle';
-                icon.textContent = '🔔';
-                text.textContent = enabled ? 'Click to Allow' : 'Enable Notifications';
-            }
-        }
-
-        function showIOSInstallPrompt() {
-            // Only show once per session
-            if (sessionStorage.getItem('iosPromptShown')) return;
-            
-            sessionStorage.setItem('iosPromptShown', 'true');
-            
-            setTimeout(() => {
-                if (confirm('🍎 iPhone users: To receive notifications, tap the Share button and select "Add to Home Screen". This will enable push notifications for the Fish Tracker app. Would you like to see instructions?')) {
-                    showIOSInstructions();
-                }
-            }, 3000);
-        }
-
-        function showIOSInstructions() {
-            alert('📱 iPhone Setup Instructions:\n\n' +
-                  '1. Tap the Share button (⬆️) at the bottom of Safari\n' +
-                  '2. Scroll down and tap "Add to Home Screen"\n' +
-                  '3. Tap "Add" to create the app icon\n' +
-                  '4. Open the app from your home screen\n' +
-                  '5. Tap "Enable Notifications" in the app\n\n' +
-                  'This allows the app to send you fish catch notifications!');
-        }
-
-        async function toggleNotifications() {
-            if (!('Notification' in window)) {
-                alert('Your browser does not support notifications.');
-                return;
-            }
-
-            const isiOS = isIOS();
-            const pwa = isPWA();
-
-            // iOS specific handling
-            if (isiOS && !pwa) {
-                showIOSInstructions();
-                return;
-            }
-
-            const currentEnabled = localStorage.getItem('fishNotificationsEnabled') === 'true';
-            
-            if (Notification.permission === 'denied') {
-                const message = isiOS ? 
-                    'Notifications are blocked. Go to Settings > Notifications > Fish Tracker to enable them.' :
-                    'Notifications are blocked. Please enable them in your browser settings.';
-                alert(message);
-                return;
-            }
-
-            if (Notification.permission === 'default' || !currentEnabled) {
-                try {
-                    const permission = await Notification.requestPermission();
-                    if (permission === 'granted') {
-                        localStorage.setItem('fishNotificationsEnabled', 'true');
-                        await subscribeToNotifications();
-                        startNotificationListener();
-                        showWelcomeNotification();
-                    } else {
-                        localStorage.setItem('fishNotificationsEnabled', 'false');
-                        await unsubscribeFromNotifications();
-                        stopNotificationListener();
-                    }
-                } catch (error) {
-                    console.error('Error requesting notification permission:', error);
-                    localStorage.setItem('fishNotificationsEnabled', 'false');
-                    await unsubscribeFromNotifications();
-                    stopNotificationListener();
-                }
-            } else {
-                // Toggle off
-                localStorage.setItem('fishNotificationsEnabled', 'false');
-                await unsubscribeFromNotifications();
-                stopNotificationListener();
-            }
-            
-            updateNotificationUI();
-        }
-
-        // Subscribe device to notifications
-        async function subscribeToNotifications() {
-            try {
-                const deviceInfo = {
-                    deviceId: deviceId,
-                    subscribed: true,
-                    subscribedAt: new Date(),
-                    userAgent: navigator.userAgent,
-                    lastSeen: new Date()
-                };
-
-                await db.collection('notificationSubscriptions').doc(deviceId).set(deviceInfo);
-                console.log('Device subscribed to notifications');
-            } catch (error) {
-                console.error('Error subscribing to notifications:', error);
-            }
-        }
-
-        // Unsubscribe device from notifications
-        async function unsubscribeFromNotifications() {
-            try {
-                await db.collection('notificationSubscriptions').doc(deviceId).delete();
-                console.log('Device unsubscribed from notifications');
-            } catch (error) {
-                console.error('Error unsubscribing from notifications:', error);
-            }
-        }
-
-        function showWelcomeNotification() {
-            if (canSendNotification()) {
-                new Notification('🎣 Fish Tracker Notifications Enabled!', {
-                    body: 'You\'ll now receive notifications when new fish are caught.',
-                    icon: '🎣',
-                    badge: '🎣',
-                    tag: 'welcome'
-                });
-            }
-        }
-
-        function canSendNotification() {
-            return 'Notification' in window &&
-                   Notification.permission === 'granted' &&
-                   localStorage.getItem('fishNotificationsEnabled') === 'true' &&
-                   (!isIOS() || isPWA()); // iOS requires PWA for notifications
-        }
-
-        // Real-time notification listener
-        let notificationListener = null;
-
-        function startNotificationListener() {
-            if (!canSendNotification()) {
-                return;
-            }
-
-            try {
-                // Listen for new notification events
-                notificationListener = db.collection('notificationEvents')
-                    .orderBy('timestamp', 'desc')
-                    .limit(1)
-                    .onSnapshot((snapshot) => {
-                        snapshot.docChanges().forEach((change) => {
-                            if (change.type === 'added') {
-                                const notificationData = change.doc.data();
-                                
-                                // Don't notify if this device created the fish entry
-                                if (notificationData.sourceDeviceId !== deviceId) {
-                                    showRemoteFishNotification(notificationData);
-                                }
-                            }
-                        });
-                    });
-
-                console.log('Notification listener started');
-            } catch (error) {
-                console.error('Error starting notification listener:', error);
-            }
-        }
-
-        function stopNotificationListener() {
-            if (notificationListener) {
-                notificationListener();
-                notificationListener = null;
-                console.log('Notification listener stopped');
-            }
-        }
-
-        function showRemoteFishNotification(notificationData) {
-            if (!canSendNotification()) {
-                return;
-            }
-
-            const points = notificationData.points;
-            const title = `🎉 ${notificationData.fisherman} caught a fish!`;
-            const body = `${notificationData.size}" ${notificationData.fishType} worth ${points} points at ${notificationData.location || 'unknown location'}`;
-
-            try {
-                const notification = new Notification(title, {
-                    body: body,
-                    icon: notificationData.icon || '🎣',
-                    badge: '🎣',
-                    tag: `fish-${notificationData.fishId}`,
-                    requireInteraction: false,
-                    silent: false
-                });
-
-                // Auto-close notification after 5 seconds
-                setTimeout(() => {
-                    notification.close();
-                }, 5000);
-
-                // Handle notification click
-                notification.onclick = function() {
-                    window.focus();
-                    if (notificationData.fishId) {
-                        showImageModal(notificationData.fishId);
-                    }
-                    notification.close();
-                };
-            } catch (error) {
-                console.error('Error showing remote notification:', error);
-            }
-        }
-
-        // Create notification event for all subscribers
-        async function broadcastFishNotification(fish) {
-            try {
-                const points = calculateFishPoints(fish);
-                const notificationEvent = {
-                    fishId: fish.id,
-                    fisherman: fish.fisherman,
-                    fishType: fish.fishType,
-                    size: fish.size,
-                    location: fish.location,
-                    points: points,
-                    timestamp: new Date(),
-                    sourceDeviceId: deviceId,
-                    icon: fish.image || '🎣'
-                };
-
-                await db.collection('notificationEvents').add(notificationEvent);
-                console.log('Fish notification broadcast to all subscribers');
-            } catch (error) {
-                console.error('Error broadcasting fish notification:', error);
-            }
-        }
 
         // Helper function to check if a fish was caught today
         function isCaughtToday(fishTimestamp) {
